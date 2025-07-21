@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Crypto Weekly Price Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .crypto-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .crypto-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .price-positive {
+            color: #10b981;
+        }
+        
+        .price-negative {
+            color: #ef4444;
+        }
+        
+        .price-neutral {
+            color: #6b7280;
+        }
+        
+        .arrow-up {
+            color: #10b981;
+        }
+        
+        .arrow-down {
+            color: #ef4444;
+        }
+        
+        .arrow-neutral {
+            color: #6b7280;
+        }
+        
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+            background-size: 400% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+            }
+        }
+        
+        .status-card {
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .chart-container {
+            height: 200px;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .metric-card {
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .ath-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Enhanced current day highlighting */
+        .current-day-row {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: white !important;
+            border-left: 6px solid #fbbf24 !important;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+            font-weight: 600 !important;
+        }
+        
+        .current-day-row td {
+            color: white !important;
+        }
+        
+        .current-day-row .text-orange-600,
+        .current-day-row .text-green-600,
+        .current-day-row .text-blue-600,
+        .current-day-row .text-purple-600 {
+            color: #fbbf24 !important;
+        }
+        
+        /* Trading recommendation styles */
+        .recommendation-card {
+            border: 2px solid;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            font-weight: 600;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        .recommendation-exit {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+        
+        .recommendation-entry {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            border-color: #10b981;
+            color: #059669;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                <i class="fas fa-chart-line mr-3"></i>
+                Enhanced Crypto Weekly Price Tracker
+            </h1>
+            <p class="text-white text-opacity-80 text-lg">Real-time cryptocurrency price tracking with all-time high analysis</p>
+        </div>
+        
+        <!-- Time Display -->
+        <div class="glass-effect rounded-xl p-6 text-center text-white mb-8">
+            <div class="flex items-center justify-center mb-2">
+                <i class="fas fa-clock mr-2"></i>
+                <span id="local-time" class="text-xl font-semibold">Loading local time...</span>
+            </div>
+            <div id="local-date" class="text-sm opacity-80"></div>
+            <div id="last-refreshed" class="text-sm opacity-80 mt-2"></div>
+        </div>
+        
+        <!-- Status Display -->
+        <div id="status" class="glass-effect rounded-xl p-4 text-center text-white mb-8">
+            <div class="flex items-center justify-center">
+                <div class="loading-spinner mr-3"></div>
+                <span>Loading historical data from Binance...</span>
+            </div>
+        </div>
+        
+        <!-- Crypto Cards Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Bitcoin Card -->
+            <div class="crypto-card rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <img src="https://assets.coingecko.com/coins/images/1/large/bitcoin.png" alt="Bitcoin" class="w-12 h-12 mr-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-800">Bitcoin</h3>
+                            <p class="text-gray-500 text-sm">BTC</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center">
+                            <span id="btc-current-price" class="text-2xl font-bold text-gray-800">$0.00</span>
+                            <span id="btc-price-change" class="ml-2"></span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            ATH: <span id="btc-ath-price" class="font-semibold">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Chart -->
+                <div class="chart-container mb-6">
+                    <canvas id="btc-chart"></canvas>
+                </div>
+                
+                <!-- Price Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="text-left p-3 font-semibold">Day</th>
+                                <th class="text-left p-3 font-semibold text-orange-600">High</th>
+                                <th class="text-left p-3 font-semibold text-green-600">Avg</th>
+                                <th class="text-left p-3 font-semibold text-blue-600">Low</th>
+                                <th class="text-left p-3 font-semibold text-purple-600">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="btc-prices" class="divide-y divide-gray-100">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Status Metrics -->
+                <div class="status-card rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Current Price Status
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly High</div>
+                            <div id="btc-vs-high" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Average</div>
+                            <div id="btc-vs-avg" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Low</div>
+                            <div id="btc-vs-low" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs All Time High</div>
+                            <div id="btc-vs-ath" class="font-semibold">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Recommendations -->
+                <div id="btc-recommendations"></div>
+                
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200" onclick="fetchHistoricalData('btcusdt', 'btc')">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh BTC Data
+                </button>
+            </div>
+            
+            <!-- Ethereum Card -->
+            <div class="crypto-card rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <img src="https://assets.coingecko.com/coins/images/279/large/ethereum.png" alt="Ethereum" class="w-12 h-12 mr-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-800">Ethereum</h3>
+                            <p class="text-gray-500 text-sm">ETH</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center">
+                            <span id="eth-current-price" class="text-2xl font-bold text-gray-800">$0.00</span>
+                            <span id="eth-price-change" class="ml-2"></span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            ATH: <span id="eth-ath-price" class="font-semibold">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Chart -->
+                <div class="chart-container mb-6">
+                    <canvas id="eth-chart"></canvas>
+                </div>
+                
+                <!-- Price Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="text-left p-3 font-semibold">Day</th>
+                                <th class="text-left p-3 font-semibold text-orange-600">High</th>
+                                <th class="text-left p-3 font-semibold text-green-600">Avg</th>
+                                <th class="text-left p-3 font-semibold text-blue-600">Low</th>
+                                <th class="text-left p-3 font-semibold text-purple-600">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eth-prices" class="divide-y divide-gray-100">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Status Metrics -->
+                <div class="status-card rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Current Price Status
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly High</div>
+                            <div id="eth-vs-high" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Average</div>
+                            <div id="eth-vs-avg" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Low</div>
+                            <div id="eth-vs-low" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs All Time High</div>
+                            <div id="eth-vs-ath" class="font-semibold">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Recommendations -->
+                <div id="eth-recommendations"></div>
+                
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200" onclick="fetchHistoricalData('ethusdt', 'eth')">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh ETH Data
+                </button>
+            </div>
+            
+            <!-- BNB Card -->
+            <div class="crypto-card rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <img src="https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png" alt="BNB" class="w-12 h-12 mr-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-800">BNB</h3>
+                            <p class="text-gray-500 text-sm">BNB</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center">
+                            <span id="bnb-current-price" class="text-2xl font-bold text-gray-800">$0.00</span>
+                            <span id="bnb-price-change" class="ml-2"></span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            ATH: <span id="bnb-ath-price" class="font-semibold">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Chart -->
+                <div class="chart-container mb-6">
+                    <canvas id="bnb-chart"></canvas>
+                </div>
+                
+                <!-- Price Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="text-left p-3 font-semibold">Day</th>
+                                <th class="text-left p-3 font-semibold text-orange-600">High</th>
+                                <th class="text-left p-3 font-semibold text-green-600">Avg</th>
+                                <th class="text-left p-3 font-semibold text-blue-600">Low</th>
+                                <th class="text-left p-3 font-semibold text-purple-600">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bnb-prices" class="divide-y divide-gray-100">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Status Metrics -->
+                <div class="status-card rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Current Price Status
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly High</div>
+                            <div id="bnb-vs-high" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Average</div>
+                            <div id="bnb-vs-avg" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Low</div>
+                            <div id="bnb-vs-low" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs All Time High</div>
+                            <div id="bnb-vs-ath" class="font-semibold">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Recommendations -->
+                <div id="bnb-recommendations"></div>
+                
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200" onclick="fetchHistoricalData('bnbusdt', 'bnb')">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh BNB Data
+                </button>
+            </div>
+            
+            <!-- USDT Card -->
+            <div class="crypto-card rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <img src="https://assets.coingecko.com/coins/images/325/large/Tether.png" alt="USDT" class="w-12 h-12 mr-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-800">Tether</h3>
+                            <p class="text-gray-500 text-sm">USDT</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center">
+                            <span id="usdt-current-price" class="text-2xl font-bold text-gray-800">$0.00</span>
+                            <span id="usdt-price-change" class="ml-2"></span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            ATH: <span id="usdt-ath-price" class="font-semibold">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Chart -->
+                <div class="chart-container mb-6">
+                    <canvas id="usdt-chart"></canvas>
+                </div>
+                
+                <!-- Price Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="text-left p-3 font-semibold">Day</th>
+                                <th class="text-left p-3 font-semibold text-orange-600">High</th>
+                                <th class="text-left p-3 font-semibold text-green-600">Avg</th>
+                                <th class="text-left p-3 font-semibold text-blue-600">Low</th>
+                                <th class="text-left p-3 font-semibold text-purple-600">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usdt-prices" class="divide-y divide-gray-100">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Status Metrics -->
+                <div class="status-card rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Current Price Status
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly High</div>
+                            <div id="usdt-vs-high" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Average</div>
+                            <div id="usdt-vs-avg" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs Weekly Low</div>
+                            <div id="usdt-vs-low" class="font-semibold">-</div>
+                        </div>
+                        <div class="metric-card rounded-lg p-3">
+                            <div class="text-xs text-gray-500 mb-1">vs All Time High</div>
+                            <div id="usdt-vs-ath" class="font-semibold">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Recommendations -->
+                <div id="usdt-recommendations"></div>
+                
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200" onclick="fetchHistoricalData('usdtusd', 'usdt')">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh USDT Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update local time and date
+        function updateLocalTime() {
+            const now = new Date();
+            const timeElement = document.getElementById('local-time');
+            const dateElement = document.getElementById('local-date');
+            
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            
+            timeElement.textContent = now.toLocaleTimeString(undefined, timeOptions);
+            dateElement.textContent = now.toLocaleDateString(undefined, dateOptions);
+        }
+        
+        // Update time every second
+        updateLocalTime();
+        setInterval(updateLocalTime, 1000);
+        
+        // Update last refreshed time
+        function updateLastRefreshedTime() {
+            const now = new Date();
+            const lastRefreshedElement = document.getElementById('last-refreshed');
+            
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            
+            const dateOptions = { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            };
+            
+            const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+            const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+            
+            lastRefreshedElement.textContent = `Last refreshed: ${formattedDate} at ${formattedTime}`;
+        }
+        
+        // Updated all-time high data from CoinGecko/CoinMarketCap (July 2025)
+        const realAllTimeHighs = {
+            btc: 122838.00,  // Bitcoin ATH from CoinGecko
+            eth: 4878.26,    // Ethereum ATH from CoinGecko
+            bnb: 788.84,     // BNB ATH from CoinGecko
+            usdt: 1.32       // USDT ATH from CoinGecko/CoinMarketCap
+        };
+        
+        // Crypto data storage with enhanced tracking
+        const cryptoData = {
+            btc: { 
+                previousData: {},
+                currentPrice: 0,
+                weeklyHigh: 0,
+                weeklyLow: Infinity,
+                weeklyAvg: 0,
+                allTimeHigh: realAllTimeHighs.btc,
+                previousCloses: [],
+                dailyData: [],
+                chart: null
+            },
+            eth: { 
+                previousData: {},
+                currentPrice: 0,
+                weeklyHigh: 0,
+                weeklyLow: Infinity,
+                weeklyAvg: 0,
+                allTimeHigh: realAllTimeHighs.eth,
+                previousCloses: [],
+                dailyData: [],
+                chart: null
+            },
+            bnb: { 
+                previousData: {},
+                currentPrice: 0,
+                weeklyHigh: 0,
+                weeklyLow: Infinity,
+                weeklyAvg: 0,
+                allTimeHigh: realAllTimeHighs.bnb,
+                previousCloses: [],
+                dailyData: [],
+                chart: null
+            },
+            usdt: { 
+                previousData: {},
+                currentPrice: 0,
+                weeklyHigh: 0,
+                weeklyLow: Infinity,
+                weeklyAvg: 0,
+                allTimeHigh: realAllTimeHighs.usdt,
+                previousCloses: [],
+                dailyData: [],
+                chart: null
+            }
+        };
+        
+        // Days of the week
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const todayIndex = new Date().getDay();
+        
+        // Status element
+        const statusElement = document.getElementById('status');
+        
+        // Binance API endpoints
+        const BINANCE_API = 'https://api.binance.com/api/v3';
+        
+        // Chart instances
+        const chartInstances = {};
+        
+        // Auto-refresh interval in minutes
+        const AUTO_REFRESH_INTERVAL = 5;
+        let refreshIntervalId = null;
+        
+        // Initialize charts
+        function initializeChart(cryptoKey) {
+            const ctx = document.getElementById(`${cryptoKey}-chart`).getContext('2d');
+            
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: `${cryptoKey.toUpperCase()} Price`,
+                        data: [],
+                        borderColor: cryptoKey === 'btc' ? '#f59e0b' : 
+                                   cryptoKey === 'eth' ? '#3b82f6' : 
+                                   cryptoKey === 'bnb' ? '#10b981' : '#6b7280',
+                        backgroundColor: cryptoKey === 'btc' ? 'rgba(245, 158, 11, 0.1)' : 
+                                       cryptoKey === 'eth' ? 'rgba(59, 130, 246, 0.1)' : 
+                                       cryptoKey === 'bnb' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            cryptoData[cryptoKey].chart = chart;
+            return chart;
+        }
+        
+        // Update chart data
+        function updateChart(cryptoKey, labels, data) {
+            const chart = cryptoData[cryptoKey].chart;
+            if (chart) {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                chart.update();
+            }
+        }
+        
+        // Local storage functions
+        function saveToLocalStorage() {
+            try {
+                const dataToSave = {};
+                Object.keys(cryptoData).forEach(key => {
+                    dataToSave[key] = {
+                        ...cryptoData[key],
+                        chart: null // Don't save chart instances
+                    };
+                });
+                localStorage.setItem('cryptoTrackerData', JSON.stringify(dataToSave));
+                localStorage.setItem('cryptoTrackerTimestamp', Date.now().toString());
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+        
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('cryptoTrackerData');
+                const savedTimestamp = localStorage.getItem('cryptoTrackerTimestamp');
+                
+                if (savedData && savedTimestamp) {
+                    const timestamp = parseInt(savedTimestamp);
+                    const now = Date.now();
+                    const hoursSinceLastSave = (now - timestamp) / (1000 * 60 * 60);
+                    
+                    // Use cached data if it's less than 1 hour old
+                    if (hoursSinceLastSave < 1) {
+                        const parsedData = JSON.parse(savedData);
+                        Object.keys(parsedData).forEach(key => {
+                            Object.assign(cryptoData[key], parsedData[key]);
+                        });
+                        
+                        updatePriceTables();
+                        updateCurrentPrices();
+                        updateStatusSections();
+                        updateTradingRecommendations();
+                        updateCharts();
+                        
+                        statusElement.innerHTML = `
+                            <div class="flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                                <span>Loaded cached data from local storage</span>
+                            </div>
+                        `;
+                        statusElement.className = "glass-effect rounded-xl p-4 text-center text-white mb-8";
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+            }
+            return false;
+        }
+        
+        // Function to fetch current price
+        async function fetchCurrentPrice(symbol, cryptoKey) {
+            try {
+                const response = await fetch(`${BINANCE_API}/ticker/price?symbol=${symbol.toUpperCase()}`);
+                if (!response.ok) throw new Error(`Failed to fetch current price for ${symbol}`);
+                
+                const data = await response.json();
+                const oldPrice = cryptoData[cryptoKey].currentPrice;
+                cryptoData[cryptoKey].currentPrice = parseFloat(data.price);
+                
+                // Update current price display with change indicator
+                const priceElement = document.getElementById(`${cryptoKey}-current-price`);
+                const changeElement = document.getElementById(`${cryptoKey}-price-change`);
+                
+                if (priceElement) {
+                    const formattedPrice = cryptoData[cryptoKey].currentPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                        maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+                    });
+                    priceElement.textContent = `$${formattedPrice}`;
+                    
+                    // Add price change indicator
+                    if (changeElement && oldPrice > 0) {
+                        const change = ((cryptoData[cryptoKey].currentPrice - oldPrice) / oldPrice) * 100;
+                        const arrow = change > 0 ? 'fa-arrow-up' : change < 0 ? 'fa-arrow-down' : 'fa-minus';
+                        const colorClass = change > 0 ? 'text-green-500' : change < 0 ? 'text-red-500' : 'text-gray-500';
+                        
+                        changeElement.innerHTML = `
+                            <i class="fas ${arrow} ${colorClass}"></i>
+                            <span class="${colorClass} text-sm ml-1">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</span>
+                        `;
+                    }
+                }
+                
+                // Update ATH display
+                const athElement = document.getElementById(`${cryptoKey}-ath-price`);
+                if (athElement) {
+                    const formattedATH = cryptoData[cryptoKey].allTimeHigh.toLocaleString(undefined, {
+                        minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                        maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+                    });
+                    athElement.textContent = `$${formattedATH}`;
+                }
+                
+                updateStatusSections();
+                updateTradingRecommendations();
+                
+            } catch (error) {
+                console.error(`Error fetching current price for ${symbol}:`, error);
+            }
+        }
+        
+        // Function to update trading recommendations - NEW LOGIC
+        function updateTradingRecommendations() {
+            Object.keys(cryptoData).forEach(cryptoKey => {
+                const recommendationsElement = document.getElementById(`${cryptoKey}-recommendations`);
+                if (!recommendationsElement) return;
+                
+                const currentPrice = cryptoData[cryptoKey].currentPrice;
+                const dailyData = cryptoData[cryptoKey].dailyData;
+                
+                if (!currentPrice || !dailyData || dailyData.length < 2) return;
+                
+                let recommendations = [];
+                
+                // Get yesterday's data (previous day from today)
+                const today = new Date();
+                const todayDayIndex = today.getDay();
+                const yesterdayDayIndex = todayDayIndex === 0 ? 6 : todayDayIndex - 1;
+                const yesterdayName = daysOfWeek[yesterdayDayIndex];
+                
+                // Find yesterday's data
+                const yesterdayData = dailyData.find(day => day.dayName === yesterdayName);
+                
+                if (yesterdayData) {
+                    const yesterdayHigh = yesterdayData.high;
+                    const yesterdayLow = yesterdayData.low;
+                    
+                    // Check for potential entry (10% above or below previous day's low)
+                    const lowDiff = ((currentPrice - yesterdayLow) / yesterdayLow) * 100;
+                    if (Math.abs(lowDiff) >= 10) {
+                        const direction = lowDiff > 0 ? 'above' : 'below';
+                        recommendations.push({
+                            type: 'entry',
+                            message: `💡 Potential Entry: Current price is ${Math.abs(lowDiff).toFixed(1)}% ${direction} yesterday's low ($${yesterdayLow.toFixed(2)})`
+                        });
+                    }
+                    
+                    // Check for potential exit (20% above or below previous day's high)
+                    const highDiff = ((currentPrice - yesterdayHigh) / yesterdayHigh) * 100;
+                    if (Math.abs(highDiff) >= 20) {
+                        const direction = highDiff > 0 ? 'above' : 'below';
+                        recommendations.push({
+                            type: 'exit',
+                            message: `🚨 Potential Exit: Current price is ${Math.abs(highDiff).toFixed(1)}% ${direction} yesterday's high ($${yesterdayHigh.toFixed(2)})`
+                        });
+                    }
+                }
+                
+                // Display recommendations
+                recommendationsElement.innerHTML = '';
+                if (recommendations.length === 0) {
+                    const div = document.createElement('div');
+                    div.className = 'text-center text-gray-500 text-sm py-2';
+                    div.textContent = 'No trading signals for today based on yesterday\'s levels';
+                    recommendationsElement.appendChild(div);
+                } else {
+                    recommendations.forEach(rec => {
+                        const div = document.createElement('div');
+                        div.className = `recommendation-card recommendation-${rec.type}`;
+                        div.textContent = rec.message;
+                        recommendationsElement.appendChild(div);
+                    });
+                }
+            });
+        }
+        
+        // Function to fetch historical data from Binance
+        async function fetchHistoricalData(symbol, cryptoKey) {
+            try {
+                statusElement.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <div class="loading-spinner mr-3"></div>
+                        <span>Fetching historical data for ${symbol.toUpperCase()}...</span>
+                    </div>
+                `;
+                statusElement.className = "glass-effect rounded-xl p-4 text-center text-white mb-8";
+                
+                // Store previous data for comparison
+                cryptoData[cryptoKey].previousData = { ...cryptoData[cryptoKey] };
+                
+                // Reset weekly stats
+                cryptoData[cryptoKey].weeklyHigh = 0;
+                cryptoData[cryptoKey].weeklyLow = Infinity;
+                cryptoData[cryptoKey].previousCloses = [];
+                cryptoData[cryptoKey].dailyData = [];
+                let totalAvg = 0;
+                let dayCount = 0;
+                
+                // Calculate timestamps for the last 7 days
+                const now = new Date();
+                const endTime = now.getTime();
+                const startTime = endTime - (7 * 24 * 60 * 60 * 1000); // 7 days ago
+                
+                // Fetch daily klines (candlestick data)
+                const response = await fetch(
+                    `${BINANCE_API}/klines?symbol=${symbol.toUpperCase()}&interval=1d&startTime=${startTime}&endTime=${endTime}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                
+                const klines = await response.json();
+                
+                // Process each day's data
+                const chartLabels = [];
+                const chartData = [];
+                
+                klines.forEach((kline, index) => {
+                    const [openTime, open, high, low, close, volume, closeTime] = kline;
+                    const dayIndex = new Date(openTime).getDay();
+                    const dayName = daysOfWeek[dayIndex];
+                    const avgPrice = (parseFloat(high) + parseFloat(low)) / 2;
+                    
+                    const dayData = {
+                        dayName: dayName,
+                        high: parseFloat(high),
+                        low: parseFloat(low),
+                        avg: avgPrice,
+                        open: parseFloat(open),
+                        close: parseFloat(close),
+                        diff: parseFloat(high) - parseFloat(low)
+                    };
+                    
+                    cryptoData[cryptoKey][dayName] = dayData;
+                    cryptoData[cryptoKey].dailyData.push(dayData);
+                    
+                    // Store previous closes for comparison
+                    cryptoData[cryptoKey].previousCloses.push(parseFloat(close));
+                    
+                    // Update weekly stats
+                    cryptoData[cryptoKey].weeklyHigh = Math.max(cryptoData[cryptoKey].weeklyHigh, parseFloat(high));
+                    cryptoData[cryptoKey].weeklyLow = Math.min(cryptoData[cryptoKey].weeklyLow, parseFloat(low));
+                    
+                    totalAvg += avgPrice;
+                    dayCount++;
+                    
+                    // Chart data
+                    chartLabels.push(dayName.substring(0, 3));
+                    chartData.push(parseFloat(close));
+                });
+                
+                cryptoData[cryptoKey].weeklyAvg = totalAvg / dayCount;
+                
+                // Update chart
+                updateChart(cryptoKey, chartLabels, chartData);
+                
+                // Fetch current price
+                await fetchCurrentPrice(symbol, cryptoKey);
+                
+                updatePriceTables();
+                updateCurrentPrices();
+                updateStatusSections();
+                updateTradingRecommendations();
+                saveToLocalStorage();
+                updateLastRefreshedTime();
+                
+                statusElement.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                        <span>Historical data loaded successfully!</span>
+                    </div>
+                `;
+                statusElement.className = "glass-effect rounded-xl p-4 text-center text-white mb-8";
+                
+            } catch (error) {
+                statusElement.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                        <span>Error fetching ${symbol} data: ${error.message}</span>
+                    </div>
+                `;
+                statusElement.className = "glass-effect rounded-xl p-4 text-center text-white mb-8";
+                console.error(`Error fetching ${symbol} data:`, error);
+                
+                // Generate mock data as fallback
+                generateMockData(cryptoKey);
+            }
+        }
+        
+        // Generate mock data if APIs fail
+        function generateMockData(cryptoKey) {
+            const basePrice = cryptoKey === 'btc' ? 50000 : 
+                            cryptoKey === 'eth' ? 3000 : 
+                            cryptoKey === 'bnb' ? 500 : 1; // USDT base ~1
+            
+            cryptoData[cryptoKey].weeklyHigh = 0;
+            cryptoData[cryptoKey].weeklyLow = Infinity;
+            cryptoData[cryptoKey].previousCloses = [];
+            cryptoData[cryptoKey].dailyData = [];
+            
+            let totalAvg = 0;
+            let dayCount = 0;
+            
+            const chartLabels = [];
+            const chartData = [];
+            
+            daysOfWeek.forEach((day, index) => {
+                const variation = 0.9 + Math.random() * 0.2;
+                const high = basePrice * (1 + Math.random() * 0.1) * variation;
+                const low = basePrice * (0.9 - Math.random() * 0.1) * variation;
+                const avg = (high + low) / 2;
+                const close = low + (high - low) * Math.random();
+                const diff = high - low;
+                
+                const dayData = {
+                    dayName: day,
+                    high: high,
+                    low: low,
+                    avg: avg,
+                    close: close,
+                    diff: diff
+                };
+                
+                cryptoData[cryptoKey][day] = dayData;
+                cryptoData[cryptoKey].dailyData.push(dayData);
+                
+                cryptoData[cryptoKey].previousCloses.push(close);
+                cryptoData[cryptoKey].weeklyHigh = Math.max(cryptoData[cryptoKey].weeklyHigh, high);
+                cryptoData[cryptoKey].weeklyLow = Math.min(cryptoData[cryptoKey].weeklyLow, low);
+                totalAvg += avg;
+                dayCount++;
+                
+                chartLabels.push(day.substring(0, 3));
+                chartData.push(close);
+            });
+            
+            cryptoData[cryptoKey].weeklyAvg = totalAvg / dayCount;
+            cryptoData[cryptoKey].currentPrice = basePrice * (0.95 + Math.random() * 0.1);
+            
+            updateChart(cryptoKey, chartLabels, chartData);
+            updatePriceTables();
+            updateCurrentPrices();
+            updateStatusSections();
+            updateTradingRecommendations();
+            saveToLocalStorage();
+            updateLastRefreshedTime();
+            
+            statusElement.innerHTML = `
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                    <span>Using simulated data (APIs unavailable)</span>
+                </div>
+            `;
+            statusElement.className = "glass-effect rounded-xl p-4 text-center text-white mb-8";
+        }
+        
+        // Update current prices display
+        function updateCurrentPrices() {
+            Object.keys(cryptoData).forEach(cryptoKey => {
+                const priceElement = document.getElementById(`${cryptoKey}-current-price`);
+                const athElement = document.getElementById(`${cryptoKey}-ath-price`);
+                
+                if (priceElement && cryptoData[cryptoKey].currentPrice) {
+                    const formattedPrice = cryptoData[cryptoKey].currentPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                        maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+                    });
+                    priceElement.textContent = `$${formattedPrice}`;
+                }
+                
+                if (athElement && cryptoData[cryptoKey].allTimeHigh) {
+                    const formattedATH = cryptoData[cryptoKey].allTimeHigh.toLocaleString(undefined, {
+                        minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                        maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+                    });
+                    athElement.textContent = `$${formattedATH}`;
+                }
+            });
+        }
+        
+        // Update charts
+        function updateCharts() {
+            Object.keys(cryptoData).forEach(cryptoKey => {
+                const chartData = [];
+                const chartLabels = [];
+                
+                daysOfWeek.forEach(day => {
+                    if (cryptoData[cryptoKey][day]) {
+                        chartLabels.push(day.substring(0, 3));
+                        chartData.push(cryptoData[cryptoKey][day].close || cryptoData[cryptoKey][day].avg);
+                    }
+                });
+                
+                updateChart(cryptoKey, chartLabels, chartData);
+            });
+        }
+        
+        // Update status sections
+        function updateStatusSections() {
+            Object.keys(cryptoData).forEach(cryptoKey => {
+                const currentPrice = cryptoData[cryptoKey].currentPrice;
+                const weeklyHigh = cryptoData[cryptoKey].weeklyHigh;
+                const weeklyLow = cryptoData[cryptoKey].weeklyLow;
+                const weeklyAvg = cryptoData[cryptoKey].weeklyAvg;
+                const allTimeHigh = cryptoData[cryptoKey].allTimeHigh;
+                
+                if (currentPrice && weeklyHigh && weeklyLow && weeklyAvg && allTimeHigh) {
+                    // Calculate percentages
+                    const vsHigh = ((currentPrice - weeklyHigh) / weeklyHigh * 100);
+                    const vsAvg = ((currentPrice - weeklyAvg) / weeklyAvg * 100);
+                    const vsLow = ((currentPrice - weeklyLow) / weeklyLow * 100);
+                    const vsATH = ((currentPrice - allTimeHigh) / allTimeHigh * 100);
+                    
+                    // Update status elements
+                    const highElement = document.getElementById(`${cryptoKey}-vs-high`);
+                    const avgElement = document.getElementById(`${cryptoKey}-vs-avg`);
+                    const lowElement = document.getElementById(`${cryptoKey}-vs-low`);
+                    const athElement = document.getElementById(`${cryptoKey}-vs-ath`);
+                    
+                    if (highElement) {
+                        const arrow = vsHigh >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                        const colorClass = vsHigh >= 0 ? 'text-green-600' : 'text-red-600';
+                        highElement.innerHTML = `
+                            <i class="fas ${arrow} ${colorClass} mr-1"></i>
+                            <span class="${colorClass}">${vsHigh >= 0 ? '+' : ''}${vsHigh.toFixed(2)}%</span>
+                        `;
+                    }
+                    
+                    if (avgElement) {
+                        const arrow = vsAvg >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                        const colorClass = vsAvg >= 0 ? 'text-green-600' : 'text-red-600';
+                        avgElement.innerHTML = `
+                            <i class="fas ${arrow} ${colorClass} mr-1"></i>
+                            <span class="${colorClass}">${vsAvg >= 0 ? '+' : ''}${vsAvg.toFixed(2)}%</span>
+                        `;
+                    }
+                    
+                    if (lowElement) {
+                        const arrow = vsLow >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                        const colorClass = vsLow >= 0 ? 'text-green-600' : 'text-red-600';
+                        lowElement.innerHTML = `
+                            <i class="fas ${arrow} ${colorClass} mr-1"></i>
+                            <span class="${colorClass}">${vsLow >= 0 ? '+' : ''}${vsLow.toFixed(2)}%</span>
+                        `;
+                    }
+                    
+                    if (athElement) {
+                        const arrow = vsATH >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                        const colorClass = vsATH >= 0 ? 'text-green-600' : 'text-red-600';
+                        athElement.innerHTML = `
+                            <i class="fas ${arrow} ${colorClass} mr-1"></i>
+                            <span class="${colorClass}">${vsATH >= 0 ? '+' : ''}${vsATH.toFixed(2)}%</span>
+                        `;
+                    }
+                }
+            });
+        }
+        
+        // Update the price tables in the UI
+        function updatePriceTables() {
+            daysOfWeek.forEach(day => {
+                updateCryptoTable('btc', day);
+                updateCryptoTable('eth', day);
+                updateCryptoTable('bnb', day);
+                updateCryptoTable('usdt', day);
+            });
+        }
+        
+        function updateCryptoTable(cryptoKey, day) {
+            const tableBody = document.getElementById(`${cryptoKey}-prices`);
+            const dayRow = document.getElementById(`${cryptoKey}-${day.toLowerCase()}`);
+            
+            const data = cryptoData[cryptoKey][day];
+            if (!data) return;
+            
+            // Get previous day's data for comparison (in weekly order)
+            const dayIndex = daysOfWeek.indexOf(day);
+            const previousDayIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+            const previousDay = daysOfWeek[previousDayIndex];
+            const previousData = cryptoData[cryptoKey][previousDay];
+            
+            const formattedHigh = data.high.toLocaleString(undefined, {
+                minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+            });
+            
+            const formattedLow = data.low.toLocaleString(undefined, {
+                minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+            });
+            
+            const formattedAvg = data.avg.toLocaleString(undefined, {
+                minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+            });
+            
+            const formattedDiff = data.diff.toLocaleString(undefined, {
+                minimumFractionDigits: cryptoKey === 'usdt' ? 4 : 2,
+                maximumFractionDigits: cryptoKey === 'usdt' ? 4 : 2
+            });
+            
+            // Generate arrows and percentage changes for all columns (comparing to previous day in weekly order)
+            function getArrowAndPercentage(current, previous) {
+                if (!previous) return { arrow: '', percentage: '' };
+                
+                const change = ((current - previous) / previous) * 100;
+                const arrowIcon = change > 0 ? 'fa-arrow-up' : 
+                                change < 0 ? 'fa-arrow-down' : 'fa-minus';
+                const colorClass = change > 0 ? 'text-green-600' : 
+                                  change < 0 ? 'text-red-600' : 'text-gray-600';
+                
+                const arrow = `<i class="fas ${arrowIcon} ${colorClass} ml-2"></i>`;
+                const percentage = `<span class="${colorClass} text-xs ml-1">(${change >= 0 ? '+' : ''}${change.toFixed(2)}%)</span>`;
+                
+                return { arrow, percentage };
+            }
+            
+            const highChange = getArrowAndPercentage(data.high, previousData?.high);
+            const avgChange = getArrowAndPercentage(data.avg, previousData?.avg);
+            const lowChange = getArrowAndPercentage(data.low, previousData?.low);
+            const diffChange = getArrowAndPercentage(data.diff, previousData?.diff);
+            
+            if (dayRow) {
+                // Update existing row
+                dayRow.cells[1].innerHTML = `<span class="text-orange-600 font-semibold">$${formattedHigh}</span>${highChange.arrow}${highChange.percentage}`;
+                dayRow.cells[2].innerHTML = `<span class="text-green-600 font-semibold">$${formattedAvg}</span>${avgChange.arrow}${avgChange.percentage}`;
+                dayRow.cells[3].innerHTML = `<span class="text-blue-600 font-semibold">$${formattedLow}</span>${lowChange.arrow}${lowChange.percentage}`;
+                dayRow.cells[4].innerHTML = `<span class="text-purple-600 font-semibold">$${formattedDiff}</span>${diffChange.arrow}${diffChange.percentage}`;
+                
+                // Enhanced current day highlighting
+                if (daysOfWeek.indexOf(day) === todayIndex) {
+                    dayRow.className = 'current-day-row';
+                }
+            } else {
+                // Create new row
+                const row = document.createElement('tr');
+                row.id = `${cryptoKey}-${day.toLowerCase()}`;
+                row.className = 'hover:bg-gray-50 transition-colors duration-200';
+                
+                // Enhanced current day highlighting
+                if (daysOfWeek.indexOf(day) === todayIndex) {
+                    row.className = 'current-day-row';
+                }
+                
+                const dayCell = document.createElement('td');
+                dayCell.className = 'p-3 font-medium';
+                dayCell.textContent = day;
+                
+                const highCell = document.createElement('td');
+                highCell.className = 'p-3';
+                highCell.innerHTML = `<span class="text-orange-600 font-semibold">$${formattedHigh}</span>${highChange.arrow}${highChange.percentage}`;
+                
+                const avgCell = document.createElement('td');
+                avgCell.className = 'p-3';
+                avgCell.innerHTML = `<span class="text-green-600 font-semibold">$${formattedAvg}</span>${avgChange.arrow}${avgChange.percentage}`;
+                
+                const lowCell = document.createElement('td');
+                lowCell.className = 'p-3';
+                lowCell.innerHTML = `<span class="text-blue-600 font-semibold">$${formattedLow}</span>${lowChange.arrow}${lowChange.percentage}`;
+                
+                const diffCell = document.createElement('td');
+                diffCell.className = 'p-3';
+                diffCell.innerHTML = `<span class="text-purple-600 font-semibold">$${formattedDiff}</span>${diffChange.arrow}${diffChange.percentage}`;
+                
+                row.appendChild(dayCell);
+                row.appendChild(highCell);
+                row.appendChild(avgCell);
+                row.appendChild(lowCell);
+                row.appendChild(diffCell);
+                tableBody.appendChild(row);
+            }
+        }
+        
+        // Set up auto-refresh
+        function setupAutoRefresh() {
+            // Clear any existing interval
+            if (refreshIntervalId) {
+                clearInterval(refreshIntervalId);
+            }
+            
+            // Set up new interval (convert minutes to milliseconds)
+            refreshIntervalId = setInterval(() => {
+                fetchHistoricalData('btcusdt', 'btc');
+                fetchHistoricalData('ethusdt', 'eth');
+                fetchHistoricalData('bnbusdt', 'bnb');
+                fetchHistoricalData('usdtusd', 'usdt');
+            }, AUTO_REFRESH_INTERVAL * 60 * 1000);
+        }
+        
+        // Initialize charts and load data
+        window.onload = function() {
+            // Initialize charts
+            initializeChart('btc');
+            initializeChart('eth');
+            initializeChart('bnb');
+            initializeChart('usdt');
+            
+            // Try to load from localStorage first, then fetch data
+            if (!loadFromLocalStorage()) {
+                fetchHistoricalData('btcusdt', 'btc');
+                fetchHistoricalData('ethusdt', 'eth');
+                fetchHistoricalData('bnbusdt', 'bnb');
+                fetchHistoricalData('usdtusd', 'usdt');
+            }
+            
+            // Set up auto-refresh
+            setupAutoRefresh();
+        };
+    </script>
+</body>
+</html>
+
